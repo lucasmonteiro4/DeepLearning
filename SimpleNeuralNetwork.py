@@ -22,10 +22,6 @@ features.head()
 features.shape[1]
 label = data.CompressiveStrength
 
-features = data.copy()
-# Remove target
-label = features.pop('CompressiveStrength')
-
 
 preprocessor = make_column_transformer(
     (StandardScaler(),
@@ -43,7 +39,7 @@ input_shape = [features.shape[1]]
 print("Input shape: {}".format(input_shape))
 
 data.head()     # original data
-features.head() # tran
+features.head() # transformed data
 train_feat, test_feat, train_label, test_label = train_test_split( features, data.CompressiveStrength,test_size=0.3, random_state=0)
 
 model = keras.Sequential([
@@ -62,6 +58,17 @@ history_df = pd.DataFrame(history.history)
 history_df.loc[3:, ['loss']].plot()
 plt.show()
 
+# add validation loss
+
+model = keras.Sequential([
+    layers.Dense(128, activation='relu', input_shape=input_shape),
+    layers.Dense(128, activation='relu'),    
+    layers.Dense(64, activation='relu'),
+    layers.Dense(1)
+])
+
+model.compile(optimizer = "adam", loss = "mae")
+
 history = model.fit(
     train_feat, train_label,
     validation_data=(test_feat, test_label),
@@ -78,7 +85,7 @@ plt.show()
 print("Minimum Validation Loss: {:0.4f}".format(history_df['val_loss'].min()))
 
 # here it seems we have some bias
-# we decide to add some capacity to our model
+# we decide to add capacity to our model (additional units)
 
 model_c = keras.Sequential([
     layers.Dense(512, activation='relu', input_shape=input_shape),
@@ -86,6 +93,8 @@ model_c = keras.Sequential([
     layers.Dense(512, activation='relu'),
     layers.Dense(1)
 ])
+
+model.compile(optimizer = "adam", loss = "mae")
     
 history_c = model_c.fit(
      train_feat, train_label,
@@ -100,11 +109,11 @@ history_c_df.loc[:, ['loss', 'val_loss']].plot()
 plt.show()
 print("Minimum Validation Loss: {:0.4f}".format(history_c_df['val_loss'].min()))
 
-# we add a stopping time to stop the network in order to avoid overfitting
+# we add a stopping time to stop the network (capacity extended) in order to avoid overfitting
 model_c = keras.Sequential([
-    layers.Dense(256, activation='relu', input_shape=input_shape),
-    layers.Dense(256, activation='relu'),    
-    layers.Dense(256, activation='relu'),
+    layers.Dense(512, activation='relu', input_shape=input_shape),
+    layers.Dense(512, activation='relu'),    
+    layers.Dense(512, activation='relu'),
     layers.Dense(1)
 ])
 
@@ -147,22 +156,19 @@ history_d = model_d.fit(
     callbacks=[early_stopping],
     verbose=0)
 
-
-# Show the learning curves
 history_d_df = pd.DataFrame(history_d.history)
 history_d_df.loc[:, ['loss', 'val_loss']].plot()
 plt.show()
 
-# let's the same model but optimizer (stochastic gradient descent)
+# let's try the same model but with different optimizer (stochastic gradient descent)
 model_c = keras.Sequential([
-    layers.BatchNormalization(input_shape=input_shape),
-    layers.Dense(512, activation='relu'),
-    layers.BatchNormalization(),
-    layers.Dense(512, activation='relu'),
-    layers.BatchNormalization(),
-    layers.Dense(512, activation='relu'),
-    layers.BatchNormalization(),
-    layers.Dense(1),
+    layers.Dense(256, activation='relu', input_shape=input_shape),
+    layers.Dropout(0.2),
+    layers.Dense(256, activation='relu'), 
+    layers.Dropout(0.2),
+    layers.Dense(256, activation='relu'),
+    layers.Dropout(0.2),
+    layers.Dense(1)
 ])
 
 
@@ -250,3 +256,4 @@ print(("Best Validation Loss: {:0.4f}" +\
       .format(history_df['val_loss'].min(), 
               history_df['val_binary_accuracy'].max()))
 
+# the next of this project will be to get results about the prediction of the model
